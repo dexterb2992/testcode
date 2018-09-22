@@ -10,6 +10,7 @@ use DTApi\Repository\BookingRepository;
 
 /**
  * Class BookingController
+ *
  * @package DTApi\Http\Controllers
  */
 class BookingController extends Controller
@@ -22,7 +23,8 @@ class BookingController extends Controller
 
     /**
      * BookingController constructor.
-     * @param BookingRepository $bookingRepository
+     *
+     * @param  BookingRepository $bookingRepository
      */
     public function __construct(BookingRepository $bookingRepository)
     {
@@ -30,18 +32,18 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function index(Request $request)
     {
-        if($user_id = $request->get('user_id')) {
+        if ($user_id = $request->get('user_id')) {
 
             $response = $this->repository->getUsersJobs($user_id);
 
-        }
-        elseif($request->__authenticatedUser->user_type == env('ADMIN_ROLE_ID') || $request->__authenticatedUser->user_type == env('SUPERADMIN_ROLE_ID'))
-        {
+        } elseif ($request->__authenticatedUser->user_type == env('ADMIN_ROLE_ID') ||
+            $request->__authenticatedUser->user_type == env('SUPERADMIN_ROLE_ID')
+        ) {
             $response = $this->repository->getAll($request);
         }
 
@@ -49,7 +51,9 @@ class BookingController extends Controller
     }
 
     /**
-     * @param $id
+     * Show the resource
+     *
+     * @param  integer $id
      * @return mixed
      */
     public function show($id)
@@ -60,7 +64,9 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * Store the resource
+     *
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function store(Request $request)
@@ -74,8 +80,10 @@ class BookingController extends Controller
     }
 
     /**
-     * @param $id
-     * @param Request $request
+     * Update the resource
+     *
+     * @param  integer $id
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function update($id, Request $request)
@@ -88,7 +96,7 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function immediateJobEmail(Request $request)
@@ -102,12 +110,12 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function getHistory(Request $request)
     {
-        if($user_id = $request->get('user_id')) {
+        if ($user_id = $request->get('user_id')) {
 
             $response = $this->repository->getUsersJobsHistory($user_id, $request);
             return response($response);
@@ -117,7 +125,7 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function acceptJob(Request $request)
@@ -141,7 +149,7 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function cancelJob(Request $request)
@@ -155,7 +163,7 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function endJob(Request $request)
@@ -179,7 +187,9 @@ class BookingController extends Controller
     }
 
     /**
-     * @param Request $request
+     * Returns the potential jobs for translators
+     *
+     * @param  \Illuminate\Http\Request $request
      * @return mixed
      */
     public function getPotentialJobs(Request $request)
@@ -196,64 +206,78 @@ class BookingController extends Controller
     {
         $data = $request->all();
 
-        if (isset($data['distance']) && $data['distance'] != "") {
+        $distance = "";
+        $time = "";
+        $session = "";
+        $manually_handled = false;
+        $flagged = false;
+        $admincomment = "";
+        $by_admin = false;
+
+        if (isset($data['distance']) && !empty($data['distance'])) {
             $distance = $data['distance'];
-        } else {
-            $distance = "";
         }
-        if (isset($data['time']) && $data['time'] != "") {
+
+        if (isset($data['time']) && !empty($data['time'])) {
             $time = $data['time'];
-        } else {
-            $time = "";
         }
-        if (isset($data['jobid']) && $data['jobid'] != "") {
+
+        if (isset($data['jobid']) && !empty($data['jobid'])) {
             $jobid = $data['jobid'];
         }
 
-        if (isset($data['session_time']) && $data['session_time'] != "") {
+        if (isset($data['session_time']) && !empty($data['session_time'])) {
             $session = $data['session_time'];
-        } else {
-            $session = "";
         }
 
         if ($data['flagged'] == 'true') {
-            if($data['admincomment'] == '') return "Please, add comment";
-            $flagged = 'yes';
-        } else {
-            $flagged = 'no';
+            if ($data['admincomment'] == '') {
+                return "Please, add comment";
+            }
+
+            $flagged = true;
         }
         
         if ($data['manually_handled'] == 'true') {
-            $manually_handled = 'yes';
-        } else {
-            $manually_handled = 'no';
+            $manually_handled = true;
         }
 
         if ($data['by_admin'] == 'true') {
-            $by_admin = 'yes';
-        } else {
-            $by_admin = 'no';
+            $by_admin = true;
         }
 
-        if (isset($data['admincomment']) && $data['admincomment'] != "") {
+        if (isset($data['admincomment']) && !empty($data['admincomment'])) {
             $admincomment = $data['admincomment'];
-        } else {
-            $admincomment = "";
         }
+
         if ($time || $distance) {
-
-            $affectedRows = Distance::where('job_id', '=', $jobid)->update(array('distance' => $distance, 'time' => $time));
+            $affectedRows = Distance::where('job_id', '=', $jobid)
+                ->update(['distance' => $distance, 'time' => $time]);
         }
 
-        if ($admincomment || $session || $flagged || $manually_handled || $by_admin) {
+        if (!empty($admincomment) || !empty($session) || $flagged || $manually_handled || $by_admin) {
+            $data = [
+                'admin_comments' => $admincomment,
+                'flagged' => $flagged,
+                'session_time' => $session,
+                'manually_handled' => $manually_handled,
+                'by_admin' => $by_admin
+            ];
 
-            $affectedRows1 = Job::where('id', '=', $jobid)->update(array('admin_comments' => $admincomment, 'flagged' => $flagged, 'session_time' => $session, 'manually_handled' => $manually_handled, 'by_admin' => $by_admin));
+            $affectedRows1 = Job::where('id', '=', $jobid)
+                ->update($data);
 
         }
 
         return response('Record updated!');
     }
 
+    /**
+     * Reopens the job
+     *
+     * @param  \Illuminate\Http\Request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function reopen(Request $request)
     {
         $data = $request->all();
@@ -262,6 +286,12 @@ class BookingController extends Controller
         return response($response);
     }
 
+    /**
+     * Resends the job notifications to translators
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function resendNotifications(Request $request)
     {
         $data = $request->all();
@@ -274,7 +304,8 @@ class BookingController extends Controller
 
     /**
      * Sends SMS to Translator
-     * @param Request $request
+     *
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
      */
     public function resendSMSNotifications(Request $request)
